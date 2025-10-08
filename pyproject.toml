@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qgis-cadastral-generator"
+version = "1.0.0"
+description = "Automated cadastral boundary generation for QGIS"
+authors = [{name = "Matthew Fenn", email = "matthew@corelinefibre.com"}]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+keywords = ["qgis", "gis", "cadastral", "boundaries", "voronoi"]
+
+[project.urls]
+Homepage = "https://github.com/CESMikef/QGIS-CadastralAutomation"
+Repository = "https://github.com/CESMikef/QGIS-CadastralAutomation"
+Issues = "https://github.com/CESMikef/QGIS-CadastralAutomation/issues"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

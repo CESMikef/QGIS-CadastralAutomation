@@ -13,12 +13,21 @@ Usage:
     exec(open('C:/path/to/cadastral_generator.py').read())
 """
 
+import logging
+from typing import Optional, Tuple
 from qgis.core import (
     QgsProject,
     QgsVectorLayer,
     QgsVectorFileWriter
 )
 from qgis import processing
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -29,36 +38,49 @@ class Config:
     """Configuration parameters for cadastral generation"""
     
     # Input layer names (must match layers in QGIS project)
-    ROAD_LAYER_NAME = 'lines'
-    BUILDING_LAYER_NAME = 'Msogwaba Point Data — extracted_location'
+    ROAD_LAYER_NAME: str = 'lines'
+    BUILDING_LAYER_NAME: str = 'Msogwaba Point Data — extracted_location'
     
     # Output file path
-    OUTPUT_PATH = 'C:/Users/mfenn/OneDrive - Corelinefibre/Documents/QGIS Projects/Vuma/cadastrals.gpkg'
+    OUTPUT_PATH: str = 'C:/Users/mfenn/OneDrive - Corelinefibre/Documents/QGIS Projects/Vuma/cadastrals.gpkg'
     
     # Processing parameters
-    ROAD_BUFFER_METERS = 10.0      # Road buffer distance (half road width + setback)
-    MIN_AREA_SQM = 250.0           # Minimum cadastral area (square meters)
-    MAX_AREA_SQM = 2000.0          # Maximum cadastral area (square meters, 0 = no limit)
+    ROAD_BUFFER_METERS: float = 10.0      # Road buffer distance (half road width + setback)
+    MIN_AREA_SQM: float = 250.0           # Minimum cadastral area (square meters)
+    MAX_AREA_SQM: float = 2000.0          # Maximum cadastral area (square meters, 0 = no limit)
     
     # Coordinate Reference System
     # EPSG:32736 = WGS 84 / UTM Zone 36S (South Africa - Mpumalanga region)
-    TARGET_CRS = 'EPSG:32736'
+    TARGET_CRS: str = 'EPSG:32736'
+    
+    @classmethod
+    def validate(cls) -> bool:
+        """Validate configuration parameters"""
+        if cls.ROAD_BUFFER_METERS <= 0:
+            raise ValueError("ROAD_BUFFER_METERS must be positive")
+        if cls.MIN_AREA_SQM <= 0:
+            raise ValueError("MIN_AREA_SQM must be positive")
+        if cls.MAX_AREA_SQM < 0:
+            raise ValueError("MAX_AREA_SQM must be non-negative")
+        if cls.MIN_AREA_SQM >= cls.MAX_AREA_SQM and cls.MAX_AREA_SQM > 0:
+            raise ValueError("MIN_AREA_SQM must be less than MAX_AREA_SQM")
+        return True
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # CORE FUNCTIONS
 # ═══════════════════════════════════════════════════════════════════════════
 
-def get_layers(road_name, building_name):
+def get_layers(road_name: str, building_name: str) -> Tuple[Optional[QgsVectorLayer], Optional[QgsVectorLayer]]:
     """
     Retrieve layers from QGIS project by name
     
     Args:
-        road_name (str): Name of road centerlines layer
-        building_name (str): Name of building points layer
+        road_name: Name of road centerlines layer
+        building_name: Name of building points layer
         
     Returns:
-        tuple: (road_layer, building_layer) or (None, None) if not found
+        Tuple of (road_layer, building_layer) or (None, None) if not found
     """
     project = QgsProject.instance()
     
@@ -78,16 +100,16 @@ def get_layers(road_name, building_name):
     return road_layers[0], building_layers[0]
 
 
-def reproject_layer(layer, target_crs):
+def reproject_layer(layer: QgsVectorLayer, target_crs: str) -> QgsVectorLayer:
     """
     Reproject layer to target CRS
     
     Args:
         layer: QgsVectorLayer to reproject
-        target_crs (str): Target CRS (e.g., 'EPSG:32736')
+        target_crs: Target CRS (e.g., 'EPSG:32736')
         
     Returns:
-        QgsVectorLayer: Reprojected layer
+        Reprojected layer
     """
     return processing.run('native:reprojectlayer', {
         'INPUT': layer,
@@ -213,7 +235,7 @@ def save_layer(layer, output_path, layer_name='Cadastrals'):
 # MAIN PROCESSING FUNCTION
 # ═══════════════════════════════════════════════════════════════════════════
 
-def generate_cadastrals(config=None):
+def generate_cadastrals(config: Optional[Config] = None) -> Optional[QgsVectorLayer]:
     """
     Main function to generate cadastral boundaries
     
@@ -221,14 +243,24 @@ def generate_cadastrals(config=None):
         config: Configuration object (uses Config class if None)
         
     Returns:
-        QgsVectorLayer: Generated cadastral layer or None if error
+        Generated cadastral layer or None if error
     """
+    import time
+    
     if config is None:
         config = Config()
     
-    print("=" * 70)
-    print("CADASTRAL GENERATION TOOL")
-    print("=" * 70)
+    # Validate configuration
+    try:
+        config.validate()
+    except ValueError as e:
+        logger.error(f"Configuration error: {e}")
+        return None
+    
+    start_time = time.time()
+    logger.info("=" * 70)
+    logger.info("CADASTRAL GENERATION TOOL")
+    logger.info("=" * 70)
     
     # Step 1: Get input layers
     print("\n[1/6] Loading input layers...")

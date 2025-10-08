@@ -1,0 +1,12 @@
+# QGIS Cadastral Generator Requirements
+# Note: These are system-level dependencies managed by QGIS
+
+# Python version: 3.8+ (comes with QGIS)
+# QGIS version: 3.22+ (LTR recommended)
+
+# Development dependencies
+pytest>=7.0.0
+pytest-qgis>=1.3.0
+black>=22.0.0
+flake8>=4.0.0
+mypy>=0.950
