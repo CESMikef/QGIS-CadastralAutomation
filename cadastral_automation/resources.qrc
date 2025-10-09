@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/cadastral_automation" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>

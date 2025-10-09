@@ -19,12 +19,28 @@ The algorithm creates realistic property boundaries by:
 
 ---
 
+## 🎉 NEW: QGIS Plugin Available!
+
+**The tool is now available as a full QGIS plugin with a user-friendly interface!**
+
+### Plugin Features:
+✅ **Layer Selection** - Choose any layers from your project (no hardcoded names)  
+✅ **Adjustable Parameters** - Change buffer distance, min/max area, CRS in the UI  
+✅ **Blocks Mode** - Toggle to create outer boundaries only (no inner cadastrals)  
+✅ **User-Friendly Dialog** - All controls in one simple interface  
+✅ **No Coding Required** - Just click and configure!
+
+👉 **[See Plugin Installation Guide](PLUGIN_INSTALLATION.md)**
+
+---
+
 ## Features
 
 ✅ **Automatic CRS handling** - Reprojects to UTM for accurate metric calculations  
 ✅ **Voronoi tessellation** - Creates natural boundaries based on building positions  
 ✅ **Road buffer subtraction** - Respects road reserves and setbacks  
 ✅ **Area filtering** - Removes unrealistic plot sizes  
+✅ **Blocks mode** - Create outer boundaries without inner subdivision  
 ✅ **Clean, modular code** - Easy to understand and modify  
 ✅ **Error handling** - Graceful fallbacks and informative messages
 
@@ -32,17 +48,27 @@ The algorithm creates realistic property boundaries by:
 
 ## Installation
 
-### Method 1: Direct Script Execution (Recommended)
+### Method 1: QGIS Plugin (Recommended for Most Users)
+
+**See [PLUGIN_INSTALLATION.md](PLUGIN_INSTALLATION.md) for complete instructions.**
+
+Quick steps:
+1. Copy the `cadastral_automation` folder to your QGIS plugins directory
+2. Restart QGIS
+3. Enable the plugin in `Plugins > Manage and Install Plugins`
+4. Access via `Vector > Cadastral Automation`
+
+### Method 2: Direct Script Execution (For Advanced Users)
 
 1. **Download** `cadastral_generator.py` to your computer
 2. **Open QGIS** and load your road and building layers
 3. **Open Python Console**: `Plugins > Python Console` (or `Ctrl+Alt+P`)
 4. **Run the script**:
    ```python
-   exec(open('C:/Users/mfenn/Documents/GitHub/QGIS Plugin-ErfAutomation/cadastral_generator.py').read())
+   exec(open('C:/path/to/cadastral_generator.py').read())
    ```
 
-### Method 2: Add to QGIS Scripts
+### Method 3: Add to QGIS Scripts
 
 1. Open QGIS
 2. Go to `Processing > Toolbox`
@@ -264,8 +290,9 @@ Potential improvements for future versions:
 - [ ] Orthogonalization (90° corners)
 - [ ] Street frontage calculation
 - [ ] Corner lot detection
-- [ ] GUI interface
-- [ ] QGIS plugin packaging
+- [x] GUI interface ✅ **COMPLETED - Plugin available!**
+- [x] QGIS plugin packaging ✅ **COMPLETED - Plugin available!**
+- [x] Blocks mode for outer boundaries ✅ **COMPLETED - Plugin available!**
 
 ---
 

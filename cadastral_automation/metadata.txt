@@ -1,0 +1,37 @@
+[general]
+name=Cadastral Automation
+qgisMinimumVersion=3.0
+description=Automated cadastral/erf generation from road centerlines and building points using Voronoi tessellation
+version=1.0.0
+author=Michael Fennessy
+email=mfenn@example.com
+
+about=This plugin generates cadastral boundaries (erfs) from road centerlines and building points using Voronoi tessellation. Features include: adjustable buffer distances, area filtering, and blocks mode for outer boundaries only.
+
+tracker=https://github.com/CESMikef/QGIS-CadastralAutomation/issues
+repository=https://github.com/CESMikef/QGIS-CadastralAutomation
+# End of mandatory metadata
+
+# Recommended items:
+hasProcessingProvider=no
+changelog=1.0.0 - Initial release
+    - Layer selection for centerlines and points
+    - Adjustable parameters (buffer, min/max area)
+    - Blocks mode toggle for outer boundaries only
+    - Voronoi-based cadastral generation
+
+# Tags are comma separated with spaces allowed
+tags=cadastral,voronoi,automation,boundary,erf,planning
+
+homepage=https://github.com/CESMikef/QGIS-CadastralAutomation
+category=Vector
+icon=icon.png
+experimental=False
+deprecated=False
+
+# Since QGIS 3.8, a comma separated list of plugins to be installed
+# (or upgraded) can be specified.
+# plugin_dependencies=
+
+# If the plugin can run on QGIS Server.
+server=False

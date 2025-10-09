@@ -57,6 +57,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2025-10-09
+
+### Added - QGIS Plugin
+- **Full QGIS Plugin Implementation**
+  - User-friendly dialog interface
+  - Layer selection dropdowns (no hardcoded layer names)
+  - Adjustable parameters in UI (buffer distance, min/max area, CRS)
+  - Real-time parameter validation
+  - Progress logging to QGIS message log
+  
+- **Blocks Mode Feature**
+  - Toggle to create outer boundaries only
+  - No point data required in blocks mode
+  - Useful for initial planning and development blocks
+  - Automatically disables point layer selector when enabled
+
+- **Progress Feedback System**
+  - Progress dialog with step-by-step updates
+  - Cancellable processing (user can abort at any time)
+  - Progress bar showing completion percentage
+  - Detailed messages for each processing step
+  - QGIS message bar notifications for success/errors
+  - Responsive UI during processing
+
+- **Plugin Infrastructure**
+  - metadata.txt with plugin information
+  - __init__.py for plugin loading
+  - Programmatic UI creation (no .ui file dependency)
+  - Icon and resources
+  - Installation batch script for Windows
+  - Comprehensive plugin documentation
+
+### Changed
+- Reorganized project structure with plugin folder
+- Updated README with plugin installation instructions
+- Enhanced documentation with plugin usage guide
+- Dialog created programmatically instead of .ui file for better compatibility
+
+### Fixed
+- Resolved QgsMapLayerProxyModel enum issue by creating UI programmatically
+- Improved error handling with proper dialog cleanup
+
+### Technical Details
+- Plugin compatible with QGIS 3.0+
+- Uses QgsMapLayerComboBox for layer selection
+- Uses QgsProjectionSelectionWidget for CRS selection
+- Uses QgsFileWidget for output path selection
+- Uses QProgressDialog for progress feedback
+- Automatic layer filtering (lines/points)
+- Progress callback system for real-time updates
+
+### Documentation
+- PLUGIN_INSTALLATION.md: Complete plugin installation guide
+- install_plugin.bat: Automated Windows installation script
+- Updated README.md with plugin information
+- Plugin-specific README in plugin folder
+
+---
+
 ## [Unreleased]
 
 ### Planned Features
@@ -64,9 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Grid-based method option
 - Orthogonalization (90° corners)
 - Variable road buffers by classification
-- GUI interface
 - Batch processing
-- QGIS plugin packaging
 
 ### Under Consideration
 - Street frontage calculation
@@ -75,6 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cadastral ID generation
 - Export to multiple formats
 - Integration with cadastral databases
+- Plugin repository submission
 
 ---
 
@@ -82,6 +140,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.1.0 | 2025-10-09 | QGIS Plugin with UI, layer selection, and blocks mode |
 | 1.0.0 | 2025-10-08 | Initial release with core functionality |
 
 ---
