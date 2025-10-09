@@ -152,7 +152,75 @@ def create_voronoi_polygons(building_layer):
     """
     return processing.run('qgis:voronoipolygons', {
         'INPUT': building_layer,
-        'BUFFER': 10,  # 10% buffer around extent
+        'BUFFER': 30,  # 30% buffer around extent to ensure all points get polygons
+        'OUTPUT': 'memory:'
+    })['OUTPUT']
+
+
+def create_blocks(road_layer, buffer_distance, target_crs):
+    """
+    Create blocks (negative space of roads)
+    
+    Args:
+        road_layer: QgsVectorLayer with road centerlines
+        buffer_distance (float): Buffer distance in meters
+        target_crs (str): Target CRS
+        
+    Returns:
+        QgsVectorLayer: Block polygons
+    """
+    # Reproject and buffer roads
+    roads_projected = reproject_layer(road_layer, target_crs)
+    road_buffer = buffer_roads(roads_projected, buffer_distance)
+    
+    # Get extent with padding
+    extent = road_buffer.extent()
+    padding = buffer_distance * 5
+    extent.grow(padding)
+    
+    # Create extent polygon
+    from qgis.core import QgsGeometry, QgsFeature, QgsCoordinateReferenceSystem
+    extent_geom = QgsGeometry.fromRect(extent)
+    
+    extent_layer = QgsVectorLayer('Polygon?crs=' + target_crs, 'extent', 'memory')
+    extent_provider = extent_layer.dataProvider()
+    extent_feature = QgsFeature()
+    extent_feature.setGeometry(extent_geom)
+    extent_provider.addFeatures([extent_feature])
+    extent_layer.updateExtents()
+    
+    # Subtract road buffer from extent to get blocks
+    blocks = processing.run('native:difference', {
+        'INPUT': extent_layer,
+        'OVERLAY': road_buffer,
+        'OUTPUT': 'memory:'
+    })['OUTPUT']
+    
+    # Multipart to singleparts
+    blocks = processing.run('native:multiparttosingleparts', {
+        'INPUT': blocks,
+        'OUTPUT': 'memory:'
+    })['OUTPUT']
+    
+    return blocks
+
+
+def intersect_with_blocks(cadastral_layer, blocks_layer):
+    """
+    Intersect cadastral polygons with block boundaries to prevent cross-block polygons
+    
+    Args:
+        cadastral_layer: QgsVectorLayer with cadastral polygons
+        blocks_layer: QgsVectorLayer with block polygons
+        
+    Returns:
+        QgsVectorLayer: Cadastrals intersected with blocks
+    """
+    return processing.run('native:intersection', {
+        'INPUT': cadastral_layer,
+        'OVERLAY': blocks_layer,
+        'INPUT_FIELDS': [],
+        'OVERLAY_FIELDS': [],
         'OUTPUT': 'memory:'
     })['OUTPUT']
 
@@ -283,19 +351,36 @@ def generate_cadastrals(config: Optional[Config] = None) -> Optional[QgsVectorLa
     print(f"  ✓ Reprojected to metric CRS")
     
     # Step 3: Buffer roads
-    print(f"\n[3/6] Buffering roads by {config.ROAD_BUFFER_METERS}m...")
+    print(f"\n[3/8] Buffering roads by {config.ROAD_BUFFER_METERS}m...")
     road_buffer = buffer_roads(roads_projected, config.ROAD_BUFFER_METERS)
     print(f"  ✓ Road buffer created")
     
     # Step 4: Create Voronoi polygons
-    print(f"\n[4/6] Creating Voronoi polygons from buildings...")
+    print(f"\n[4/8] Creating Voronoi polygons from buildings...")
     voronoi = create_voronoi_polygons(buildings_projected)
     print(f"  ✓ Voronoi polygons: {voronoi.featureCount()} features")
     
-    # Step 5: Subtract roads from cadastrals
-    print(f"\n[5/6] Subtracting road reserves...")
+    # Check if all points got polygons
+    point_count = building_layer.featureCount()
+    voronoi_count = voronoi.featureCount()
+    if voronoi_count < point_count:
+        print(f"  ⚠ Warning: {point_count - voronoi_count} points did not get Voronoi polygons")
+        print(f"    This may indicate points at dataset edges or isolated points")
+    
+    # Step 5: Subtract roads from Voronoi
+    print(f"\n[5/8] Subtracting road reserves...")
     cadastrals = subtract_roads(voronoi, road_buffer)
     print(f"  ✓ After subtraction: {cadastrals.featureCount()} features")
+    
+    # Step 6: Create blocks (negative space of roads)
+    print(f"\n[6/8] Creating blocks from road network...")
+    blocks = create_blocks(road_layer, config.ROAD_BUFFER_METERS, config.TARGET_CRS)
+    print(f"  ✓ Blocks created: {blocks.featureCount()} features")
+    
+    # Step 7: Intersect with blocks to ensure cadastrals stay within their block
+    print(f"\n[7/8] Intersecting cadastrals with blocks (prevents cross-block polygons)...")
+    cadastrals_blocked = intersect_with_blocks(cadastrals, blocks)
+    print(f"  ✓ After intersection with blocks: {cadastrals_blocked.featureCount()} features")
     
     # Check area distribution
     areas = [f.geometry().area() for f in cadastrals.getFeatures() 
@@ -306,10 +391,10 @@ def generate_cadastrals(config: Optional[Config] = None) -> Optional[QgsVectorLa
         in_range = sum(1 for a in areas if config.MIN_AREA_SQM <= a <= (config.MAX_AREA_SQM or float('inf')))
         print(f"  ✓ Features in target range: {in_range}")
     
-    # Step 6: Filter by area and save
-    print(f"\n[6/6] Filtering by area ({config.MIN_AREA_SQM}-{config.MAX_AREA_SQM} m²) and saving...")
+    # Step 8: Filter by area and save
+    print(f"\n[8/8] Filtering by area ({config.MIN_AREA_SQM}-{config.MAX_AREA_SQM} m²) and saving...")
     cadastrals_filtered = filter_by_area(
-        cadastrals,
+        cadastrals_blocked,
         config.MIN_AREA_SQM,
         config.MAX_AREA_SQM
     )

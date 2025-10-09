@@ -128,7 +128,17 @@ class CadastralAutomation:
         """Create Voronoi (Thiessen) polygons from building points"""
         return processing.run('qgis:voronoipolygons', {
             'INPUT': building_layer,
-            'BUFFER': 10,  # 10% buffer around extent
+            'BUFFER': 30,  # 30% buffer around extent to ensure all points get polygons
+            'OUTPUT': 'memory:'
+        })['OUTPUT']
+
+    def intersect_with_blocks(self, cadastral_layer, blocks_layer):
+        """Intersect cadastral polygons with block boundaries to prevent cross-block polygons"""
+        return processing.run('native:intersection', {
+            'INPUT': cadastral_layer,
+            'OVERLAY': blocks_layer,
+            'INPUT_FIELDS': [],
+            'OVERLAY_FIELDS': [],
             'OUTPUT': 'memory:'
         })['OUTPUT']
 
@@ -249,7 +259,7 @@ class CadastralAutomation:
                 
             else:
                 # Normal mode - create individual cadastrals
-                total_steps = 7
+                total_steps = 9
                 update_progress(1, "Running in CADASTRAL MODE - creating individual cadastrals")
                 
                 if not point_layer:
@@ -260,7 +270,7 @@ class CadastralAutomation:
                 roads_projected = self.reproject_layer(centerline_layer, target_crs)
                 buildings_projected = self.reproject_layer(point_layer, target_crs)
                 
-                # Buffer roads
+                # Buffer roads to create blocks
                 update_progress(3, f"Buffering roads by {buffer_distance}m...")
                 road_buffer = self.buffer_roads(roads_projected, buffer_distance)
                 
@@ -268,15 +278,37 @@ class CadastralAutomation:
                 update_progress(4, "Creating Voronoi polygons from points...")
                 voronoi = self.create_voronoi_polygons(buildings_projected)
                 
-                # Subtract roads
+                # Check if all points got polygons
+                point_count = buildings_projected.featureCount()
+                voronoi_count = voronoi.featureCount()
+                self.log_message(f"Points: {point_count}, Voronoi polygons: {voronoi_count}")
+                
+                if voronoi_count < point_count:
+                    self.log_message(
+                        f"Warning: {point_count - voronoi_count} points did not get Voronoi polygons. "
+                        "This may indicate points at dataset edges.",
+                        Qgis.Warning
+                    )
+                
+                # Subtract roads from Voronoi
                 update_progress(5, "Subtracting road reserves from cadastrals...")
                 cadastrals = self.subtract_roads(voronoi, road_buffer)
                 
-                # Filter by area
-                update_progress(6, f"Filtering by area ({min_area}-{max_area} m²)...")
-                result = self.filter_by_area(cadastrals, min_area, max_area)
+                # Create blocks (negative space of roads)
+                update_progress(6, "Creating blocks from road network...")
+                blocks = self.create_blocks(centerline_layer, buffer_distance, target_crs)
+                self.log_message(f"Blocks created: {blocks.featureCount()} features")
                 
-                update_progress(7, f"Cadastrals created: {result.featureCount()} features")
+                # Intersect with blocks to ensure cadastrals stay within their block
+                update_progress(7, "Intersecting cadastrals with blocks (prevents cross-block polygons)...")
+                cadastrals_blocked = self.intersect_with_blocks(cadastrals, blocks)
+                self.log_message(f"After intersection with blocks: {cadastrals_blocked.featureCount()} features")
+                
+                # Filter by area
+                update_progress(8, f"Filtering by area ({min_area}-{max_area} m²)...")
+                result = self.filter_by_area(cadastrals_blocked, min_area, max_area)
+                
+                update_progress(9, f"Cadastrals created: {result.featureCount()} features")
             
             return result
             
@@ -395,7 +427,7 @@ class CadastralAutomation:
                 self.log_message("=" * 70)
                 
                 # Create progress dialog
-                total_steps = 4 if blocks_mode else 7
+                total_steps = 4 if blocks_mode else 9
                 progress = QProgressDialog(
                     "Initializing...", 
                     "Cancel", 
